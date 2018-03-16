@@ -1,0 +1,1 @@
+select owner,object_name,status from dba_objects where status like 'INVALID';

@@ -1,0 +1,129 @@
+#Usage Check
+
+select TABLESPACE_NAME, BYTES_USED/1024/1024 "USED MB", BYTES_FREE/1024/1024 "FREE MB"from V$TEMP_SPACE_HEADER;
+
+SELECT tablespace_name, SUM(bytes_used)/1024/1024 "USED MB", SUM(bytes_free)/1024/1024 "FREE MB" FROM  V$temp_space_header 
+GROUP  BY tablespace_name;
+
+SELECT A.tablespace_name tablespace, D.mb_total,
+SUM (A.used_blocks * D.block_size) / 1024 / 1024 mb_used,
+D.mb_total - SUM (A.used_blocks * D.block_size) / 1024 / 1024 mb_free
+FROM v$sort_segment A,
+(
+SELECT B.name, C.block_size, SUM (C.bytes) / 1024 / 1024 mb_total
+FROM v$tablespace B, v$tempfile C
+WHERE B.ts#= C.ts#
+GROUP BY B.name, C.block_size
+) D
+WHERE A.tablespace_name = D.name
+GROUP by A.tablespace_name, D.mb_total;
+
+#Monitor when getting filled up 
+
+SELECT   A.tablespace_name tablespace, D.mb_total,
+         SUM (A.used_blocks * D.block_size) / 1024 / 1024 mb_used,
+         D.mb_total - SUM (A.used_blocks * D.block_size) / 1024 / 1024 mb_free
+FROM     v$sort_segment A,
+         (
+         SELECT   B.name, C.block_size, SUM (C.bytes) / 1024 / 1024 mb_total
+         FROM     v$tablespace B, v$tempfile C
+         WHERE    B.ts#= C.ts#
+         GROUP BY B.name, C.block_size
+         ) D
+WHERE    A.tablespace_name = D.name
+GROUP by A.tablespace_name, D.mb_total;
+
+
+SET feed on
+COL MACHINE FOR A30                                                                 
+COL PROGRAM FOR A30               
+COL USERNAME FOR A10
+SET LINE 200                                                       
+
+/**************************************************************/
+-- To see how much actual total tempspace is used
+-- Even the sql ended, if the user session remained login, the tempspace will not be released
+/**************************************************************/
+SELECT 
+                F.TABLESPACE_NAME, 
+                G.TOTAL_TEMP_SPACE_USED, 
+                F.TOTAL_TEMP_MB, 
+                G.TOTAL_TEMP_SPACE_USED/F.TOTAL_TEMP_MB*100 PCT_TEMP_USED,
+                100 - (G.TOTAL_TEMP_SPACE_USED/F.TOTAL_TEMP_MB*100) PCT_TEMP_FREE
+FROM 
+                (SELECT TABLESPACE_NAME, SUM(BYTES)/1024/1024 TOTAL_TEMP_MB FROM   DBA_TEMP_FILES  GROUP BY TABLESPACE_NAME) F ,
+                (SELECT 
+                                B.TABLESPACE_NAME, 
+                                SUM(A.BLOCKS * B.BLOCK_SIZE/1024/1024 ) TOTAL_TEMP_SPACE_USED 
+                FROM 
+                                V$SORT_USAGE A,
+                                DBA_TABLESPACES B
+                WHERE
+                                A.TABLESPACE = B.TABLESPACE_NAME
+                GROUP BY  B.TABLESPACE_NAME) G
+WHERE F.TABLESPACE_NAME = G.TABLESPACE_NAME
+/
+
+
+/**************************************************************/
+-- To see how much actual tempspace is used by each user session(if a user has multiple sessions, 
+-- it will get total for each session)
+/**************************************************************/
+
+SELECT
+                G.USERNAME, 
+                g.sid,
+                g.serial#, 
+                F.TABLESPACE_NAME, 
+                G.TOTAL_TEMP_USED_MB, 
+                F.TOTAL_TEMP_MB, 
+                G.TOTAL_TEMP_USED_MB/F.TOTAL_TEMP_MB*100 PCT_TEMP_USED,
+                100 - (G.TOTAL_TEMP_USED_MB/F.TOTAL_TEMP_MB*100) PCT_TEMP_FREE
+FROM 
+                (SELECT TABLESPACE_NAME, SUM(BYTES)/1024/1024 TOTAL_TEMP_MB FROM   DBA_TEMP_FILES  GROUP BY TABLESPACE_NAME) F ,
+                (SELECT 
+                                C.USERNAME ,
+                                c.sid,
+                                c.serial#, 
+                                A.TABLESPACE TABLESPACE_NAME,
+                                sum(A.BLOCKS * E.BLOCK_SIZE/1024/1024) TOTAL_TEMP_USED_MB
+                FROM
+                                V$SORT_USAGE A,
+                                V$SESSION C,
+                                DBA_TABLESPACES E
+                WHERE C.SADDR=A.SESSION_ADDR
+                                AND A.TABLESPACE = E.TABLESPACE_NAME
+                group by c.username, c.sid, c.serial#, tablespace
+                ) G
+WHERE F.TABLESPACE_NAME = G.TABLESPACE_NAME
+order by 5
+/
+
+
+
+/**************************************************************/
+-- To see who is using the tempspace
+/**************************************************************/
+SELECT DISTINCT
+                C.USERNAME "USER",
+                C.OSUSER ,
+                C.SID,
+                C.SERIAL#,
+                B.SPID "UNIX_PID",
+                C.MACHINE,
+                C.PROGRAM "PROGRAM",
+                A.BLOCKS * E.BLOCK_SIZE/1024/1024 MB_TEMP_USED  ,
+                A.TABLESPACE,
+                D.SQL_TEXT
+FROM
+                V$SORT_USAGE A,
+                V$PROCESS B,
+                V$SESSION C,
+                V$SQLAREA D,
+                DBA_TABLESPACES E
+WHERE C.SADDR=A.SESSION_ADDR
+                AND B.ADDR=C.PADDR
+                AND C.SQL_ADDRESS=D.ADDRESS(+)
+                AND A.TABLESPACE = E.TABLESPACE_NAME
+/
+

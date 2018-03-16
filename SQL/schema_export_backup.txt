@@ -1,0 +1,5 @@
+
+
+#SCHEMA EXPORT BACKUP...........
+
+nohup expdp userid=\'/ as sysdba\' DIRECTORY=DATA_PUMP_DIR SCHEMAS=VENDAVO_USER DUMPFILE=(location)expdp_schema_name.dmp LOGFILE=(location)expdp_schema_name.log job_name=expdp_schema_name

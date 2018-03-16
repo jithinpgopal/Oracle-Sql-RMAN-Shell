@@ -1,0 +1,26 @@
+# Take RMAN Cold backup to disc
+
+
+sqlplus / as sysdba
+shut immediate
+rman
+connect target /
+
+run
+{
+ALLOCATE CHANNEL D1 DEVICE TYPE DISK format "/location/cold_inc_%d_%U";
+ALLOCATE CHANNEL D2 DEVICE TYPE DISK format "/location/cold_inc_%d_%U";
+ALLOCATE CHANNEL D3 DEVICE TYPE DISK format "/location/cold_inc_%d_%U";
+ALLOCATE CHANNEL D4 DEVICE TYPE DISK format "/location/cold_inc_%d_%U";
+
+## Perform the DB Backup ##
+BACKUP AS COMPRESSED BACKUPSET DATABASE ;
+
+BACKUP CURRENT CONTROLFILE FORMAT '/location/DBNAME_ctl01.ctl';
+
+release channel D1 ;
+release channel D2 ;
+release channel D3 ;
+release channel D4 ;
+}
+

@@ -1,0 +1,75 @@
+# Create User
+
+CREATE USER <username> IDENTIFIED BY <password>
+DEFAULT TABLESPACE USERS
+TEMPORARY TABLESPACE TEMP
+PROFILE <profile>;
+
+
+#providing grants
+
+grant connect,create session to <username>;
+
+
+# Enabling audits
+
+AUDIT update any table,insert any table,delete any table by <USERNAME> WHENEVER SUCCESSFUL;
+AUDIT create any table,drop any table,alter any table by <USERNAME> WHENEVER SUCCESSFUL;
+AUDIT execute procedure,grant procedure by <USERNAME> WHENEVER SUCCESSFUL;
+AUDIT create any trigger,alter any trigger, drop any trigger by <USERNAME> WHENEVER SUCCESSFUL;
+AUDIT create any view,drop any view by <USERNAME> WHENEVER SUCCESSFUL;
+
+# Get user DDLs and grants
+
+set pages 3000 lines 300 long 99999
+SELECT dbms_metadata.get_ddl('USER','<USERNAME>') FROM dual;
+SELECT DBMS_METADATA.GET_GRANTED_DDL('SYSTEM_GRANT','<USERNAME>') from dual;
+SELECT DBMS_METADATA.GET_GRANTED_DDL('ROLE_GRANT','<USERNAME>') from dual;
+SELECT DBMS_METADATA.GET_GRANTED_DDL('OBJECT_GRANT','<USERNAME>') from dual;
+
+
+# Get User Status
+
+set long 999999 lines 3000 pages 3000 
+select USERNAME,ACCOUNT_STATUS,LOCK_DATE,EXPIRY_DATE,PROFILE,CREATED from dba_users where username='<USERNAME>';
+
+select ptime from user$ where name = '<USERNAME>';
+
+
+# Password reset
+
+alter user <USERNAME>  identified by <password>;
+
+
+# Check user privileges
+
+select 'grant ' || PRIVILEGE || ' on '|| OWNER||'.'||TABLE_NAME||' to '||GRANTEE || 
+decode(GRANTABLE,'YES',' with 
+admin option',null) || ';' text
+from dba_tab_privs
+where grantee in '<USERNAME>'
+order by 1; 
+
+# Provide privileges on all views/tables under a particular schema
+
+select 'grant select on <SCHEMAOUNER>.'||table_name||' to GRANTEE;' from dba_tables where owner like 'SCHEMAOUNER';
+select 'grant select on <SCHEMAOUNER>.'||view_name||' to GRANTEE;' from dba_views where owner like 'SCHEMAOUNER';
+
+# Get the objects under a user 
+
+select * from dba_objects where owner = 'USERNAME';
+
+# delete a user 
+
+drop user XHZ7MFJ; # Just drops the user
+drop user XHZ7MFJ cascade; # drops all the objects as well
+
+# Check when the user changed the password lately
+
+select name,ptime from user$ where name like 'USERNAME';
+
+# Change password
+alter user <USERNAME>  identified by <PASSWORD>;
+
+# Change profile
+alter user <USERNAME> profile  <PROFILE>;

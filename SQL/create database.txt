@@ -1,0 +1,147 @@
+#Make Oratab entry:
+
+vi /etc/oratab
+NEWDB:/oracle/base/product/12.1.0.2a:N   
+
+
+. sid NEWDB
+
+#create pfile:
+
+cd $ORACLE_HOME/dbs
+edit the init.ora file new contro file, datafile, redolog   location and make directory for the same
+vi initNEWDB.ora
+
+sample pfile - 
+-------------------------------------------------------------------------------------
+*.compatible='12.1.0'
+*.control_files='/location/NEWDB_01.ctl'
+*.db_block_size=8192
+*.db_cache_advice='OFF'# 
+*.db_cache_size=1500M# 
+*.db_domain='oracledb.ups.com'# global database name is db_name.db_domain
+*.db_file_multiblock_read_count=8# SMALL
+*.db_files=1024# SMALL
+*.db_name='T12102'
+*.db_writer_processes=2
+*.diagnostic_dest='/location/'
+*.disk_asynch_io=false# Added for 10gUpgrade
+*.global_names=TRUE
+*.java_jit_enabled=TRUE
+*.JAVA_POOL_SIZE=150M# Added for 10g Upgrade
+*.job_queue_processes=1000
+*.large_pool_size=100M# Added for 10g Upgrade
+*.local_listener='(DESCRIPTION=(ADDRESS=(PROTOCOL=IPC)(KEY=NEWDB)))'
+*.log_buffer=163840# LARGE
+*.log_checkpoint_interval=0
+*.log_checkpoint_timeout=3600
+*.max_dump_file_size='10M'# limit trace file size to 5 Meg each
+*.O7_DICTIONARY_ACCESSIBILITY=TRUE
+*.open_cursors=1000
+*.parallel_max_servers=5# SMALL
+*.pga_aggregate_target=1000M# Added for 10gUpgrade
+*.processes=300
+*.shared_pool_reserved_size=10000000
+*.shared_pool_size=1073741824
+*.sort_area_retained_size=2000000
+*.sort_area_size=2000000
+*.tape_asynch_io=false# Added for 10gUpgrade
+*.TIMED_STATISTICS=TRUE
+*.undo_management='auto'
+*.undo_retention=7200
+*.undo_tablespace='undo01'
+*.workarea_size_policy='AUTO'
+*.log_archive_format= NEWDB%t_%s_%r.log
+-----------------------------------------------------------------------------------
+
+
+#create the script for database creation:
+
+vi create_database.sql
+
+-------------------------------------------------------------------------
+CREATE DATABASE T12102P
+    MAXLOGFILES 32
+    MAXLOGMEMBERS 3
+    MAXDATAFILES 120
+    MAXINSTANCES 2
+    MAXLOGHISTORY 730
+LOGFILE
+GROUP 1 (
+    '/location/redo0101.log',
+    '/location/redo0102.log'
+) SIZE 100M ,
+  GROUP 2 (
+    '/location/redo0201.log',
+    '/location/redo0202.log'
+) SIZE 100M ,
+   GROUP 3 (
+    '/location/redo0301.log',
+    '/location/redo0302.log'
+) SIZE 100M ,
+    GROUP 4 (
+    '/location/redo0401.log',
+    '/location/redo0402.log'
+) SIZE 100M ,
+      
+DATAFILE '/location/system01.dbf' size 500M
+sysaux datafile '/location/sysaux01.dbf' size 500M
+undo tablespace undo01 datafile '/location/undo0101.dbf' size 1G
+CHARACTER SET UTF8 ;
+------------------------------------------------------------------------
+
+
+
+sqlplus / as sysdba
+startup nomount
+@create_database.sql
+
+database created
+
+shut immediate
+startup
+
+#run the folowing:
+
+@?/rdbms/admin/catalog.sql -- dictionary views
+@?/rdbms/admin/catproc.sql -- triggers , functions
+
+conn system/manager
+
+@?/sqlplus/admin/pupbld.sql-- user profiles
+
+
+
+#create listner
+
+
+cd $TNS_ADMIN
+ls
+you will get listner.ora, tnsname.ora
+
+vi listner.ora
+
+
+
+#make a new entry apart from other entry with new db name ,port no
+
+LSN_NEWDB =
+ (ADDRESS_LIST =
+      (ADDRESS = (PROTOCOL=tcp)(HOST=10.10.10.10)(Port = 1544))
+      (ADDRESS = (PROTOCOL=ipc)(KEY=NEWDB)))
+SID_LIST_LSN_NEWDB =
+  (SID_LIST =
+      (SID_DESC =
+         (GLOBAL_DBNAME = NEWDB.oracledb.com)
+         (SID_NAME = NEWDB)
+         (ORACLE_HOME = /location/12.1.0.2a)
+       )
+  )
+SECURE_REGISTER_LSN_T12102P = (IPC)
+
+...................................start listner........................................
+
+
+
+
+

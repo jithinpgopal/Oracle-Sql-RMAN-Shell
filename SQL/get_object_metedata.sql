@@ -1,0 +1,1 @@
+SELECT dbms_metadata.get_ddl('<object_type>','<dblink_name>','<owner>') FROM dual;

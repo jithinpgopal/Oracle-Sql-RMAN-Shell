@@ -63,4 +63,5 @@ alter tablespace <tablespace_name> add datafile '/location/datafilename.dbf' siz
 alter database datafile '/location/datafile.dbf' resize 30G;
 
 
-
+#change maxsize
+alter database datafile '/location/datafile.dbf' maxsize 60G;

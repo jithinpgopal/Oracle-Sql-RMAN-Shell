@@ -52,8 +52,8 @@ order by 1;
 
 # Provide privileges on all views/tables under a particular schema
 
-select 'grant select on <SCHEMAOUNER>.'||table_name||' to GRANTEE;' from dba_tables where owner like 'SCHEMAOUNER';
-select 'grant select on <SCHEMAOUNER>.'||view_name||' to GRANTEE;' from dba_views where owner like 'SCHEMAOUNER';
+select 'grant select on <SCHEMAOUNER>.'||table_name||' to GRANTEE;' from dba_tables where owner like 'SCHEMAOWNER';
+select 'grant select on <SCHEMAOUNER>.'||view_name||' to GRANTEE;' from dba_views where owner like 'SCHEMAOWNER';
 
 # Get the objects under a user 
 
@@ -61,8 +61,8 @@ select * from dba_objects where owner = 'USERNAME';
 
 # delete a user 
 
-drop user XHZ7MFJ; # Just drops the user
-drop user XHZ7MFJ cascade; # drops all the objects as well
+drop user <USERNAME>; # Just drops the user
+drop user <USERNAME> cascade; # drops all the objects as well
 
 # Check when the user changed the password lately
 
@@ -73,3 +73,10 @@ alter user <USERNAME>  identified by <PASSWORD>;
 
 # Change profile
 alter user <USERNAME> profile  <PROFILE>;
+
+# lock and expire
+alter user <USERNAME> account lock password expire
+
+
+
+

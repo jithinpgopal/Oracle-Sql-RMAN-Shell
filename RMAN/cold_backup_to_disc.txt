@@ -16,7 +16,8 @@ ALLOCATE CHANNEL D4 DEVICE TYPE DISK format "/location/cold_inc_%d_%U";
 ## Perform the DB Backup ##
 BACKUP AS COMPRESSED BACKUPSET DATABASE ;
 
-BACKUP CURRENT CONTROLFILE FORMAT '/location/DBNAME_ctl01.ctl';
+## Backup the control file ##
+BACKUP CURRENT CONTROLFILE FORMAT '/location/DBNAME_ctl01';
 
 release channel D1 ;
 release channel D2 ;

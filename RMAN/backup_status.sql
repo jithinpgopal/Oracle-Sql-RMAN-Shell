@@ -12,7 +12,7 @@ col END_TIME for a20
 col STATUS for a25
 break on OBJECT_TYPE
 
------------------Backup Information 
+-----------------Backup Information for last 30 Days
 select OBJECT_TYPE,STATUS,
 to_char(START_TIME,'DD-MON-YYYY HH24:MI') start_Time,
 to_char(END_TIME,'DD-MON-YYYY HH24:MI') END_TIME,

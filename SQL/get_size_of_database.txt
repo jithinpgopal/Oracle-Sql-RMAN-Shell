@@ -10,7 +10,7 @@ SELECT SUM (bytes)/1024/1024/1024 AS GB FROM dba_segments;
 
 
 
-# Overall database size is the sum of used space plus free space
+# Overall database size is the sum of used space plus free space including redologs
 select
 ( select sum(bytes)/1024/1024/1024 data_size from dba_data_files ) +
 ( select nvl(sum(bytes),0)/1024/1024/1024 temp_size from dba_temp_files ) +

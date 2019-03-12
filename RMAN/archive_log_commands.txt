@@ -1,0 +1,46 @@
+--Crosscheck
+crosscheck archivelog all;
+
+-- Manually delete Archive logs
+delete expired archivelog all;
+delete force noprompt archivelog all completed before 'sysdate-10';
+
+--Change Archive Destination
+alter system set log_archive_dest_1='location="/u002/arch" VALID_FOR=(all_logfiles,all_roles)' scope=both; 
+alter system set log_archive_dest_1='location="/ERP_UPG/u002/oradata/T769/arch" scope=both; 
+ALTER SYSTEM SET log_archive_dest_1="location=/ERP_UPG/u002/oradata/T769/arch";
+
+
+--Archive log restore
+---------------------------------------------------------------
+#
+#
+# RMAN SCRIPT : hot backup of QR69 archive logs
+#
+#
+set echo on
+connect target / ;
+### Catalog not available .. using control file ##### 
+
+run {
+
+   allocate channel t1 type 'sbt_tape'  ;
+   allocate channel t2 type 'sbt_tape'  ;
+
+send 'NSR_ENV=(NSR_SERVER=server.com,
+ NSR_SAVESET_BROWSE=2Weeks,
+ NSR_SAVESET_RETENTION=2Weeks,
+ NSR_DATA_VOLUME_POOL=PoolName)';
+
+set command id to 'hot_onsite_arch_DBname' ;
+
+set archivelog destination to '/u200/arch' ; 
+
+restore archivelog from sequence = 53109 until  sequence = 53110;
+
+   release channel t1 ;
+   release channel t2 ;
+}
+#
+# End of Archive Backup Script for DBname
+--------------------------------------------------------------------------
